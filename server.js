@@ -200,12 +200,10 @@ const FEEDS = {
     world: [
         'http://feeds.bbci.co.uk/news/world/rss.xml',
         'https://www.aljazeera.com/xml/rss/all.xml',
-        'https://rss.nytimes.com/services/xml/rss/nyt/World.xml',
-        'http://rss.cnn.com/rss/edition_world.rss'
+        'https://rss.nytimes.com/services/xml/rss/nyt/World.xml'
     ],
     tech: [
-        'https://feeds.feedburner.com/ndtvgadgets-latest',
-        'https://timesofindia.indiatimes.com/rssfeeds/5880659.cms'
+        'https://feeds.feedburner.com/ndtvgadgets-latest'
     ],
     sports: [
         'https://www.skysports.com/rss/12040',
