@@ -216,7 +216,6 @@ const FEEDS = {
     ],
     economy: [
         'https://economictimes.indiatimes.com/news/economy/rssfeeds/1373380680.cms',
-        'https://www.moneycontrol.com/rss/economy.xml',
         'https://www.thehindubusinessline.com/economy/feeder/default.rss',
         'https://www.livemint.com/rss/markets'
     ]
