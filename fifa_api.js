@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const API_KEY = process.env.API_FOOTBALL_KEY;
+const API_KEY = process.env.API_FOOTBALL_KEY || 'bf68f9d75cc5441d06dbd42fb779b6fb';
 // Using the direct API-Sports endpoint instead of RapidAPI to save complexity
 const API_HOST = 'v3.football.api-sports.io';
 const WORLD_CUP_LEAGUE_ID = 15;
