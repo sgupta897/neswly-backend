@@ -227,6 +227,11 @@ const FEEDS = {
         'https://economictimes.indiatimes.com/news/economy/rssfeeds/1373380680.cms',
         'https://www.thehindubusinessline.com/economy/feeder/default.rss',
         'https://www.livemint.com/rss/markets'
+    ],
+    fifa2026: [
+        'https://www.espn.com/espn/rss/soccer/news',
+        'https://rss.nytimes.com/services/xml/rss/nyt/Soccer.xml',
+        'http://feeds.bbci.co.uk/sport/football/rss.xml'
     ]
 };
 
