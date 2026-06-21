@@ -203,14 +203,23 @@ const FEEDS = {
         'https://rss.nytimes.com/services/xml/rss/nyt/World.xml'
     ],
     tech: [
-        'https://feeds.feedburner.com/ndtvgadgets-latest'
+        'https://feeds.feedburner.com/ndtvgadgets-latest',
+        'https://techcrunch.com/feed/',
+        'https://www.wired.com/feed/rss',
+        'https://www.theverge.com/rss/index.xml'
     ],
     sports: [
         'https://www.skysports.com/rss/12040',
         'https://timesofindia.indiatimes.com/rssfeeds/4719148.cms'
     ],
     entertainment: [
-        'https://rss.nytimes.com/services/xml/rss/nyt/Arts.xml'
+        'https://rss.nytimes.com/services/xml/rss/nyt/Arts.xml',
+        'https://variety.com/feed/',
+        'https://www.cinemablend.com/rss.xml',
+        'https://feeds.ign.com/ign/news',
+        'https://timesofindia.indiatimes.com/rssfeeds/1081479906.cms',
+        'https://www.hindustantimes.com/feeds/rss/entertainment/rssfeed.xml',
+        'https://indianexpress.com/section/entertainment/feed/'
     ],
     economy: [
         'https://economictimes.indiatimes.com/news/economy/rssfeeds/1373380680.cms',
@@ -231,6 +240,37 @@ async function refreshCache() {
 }
 
 // API Routes
+app.get('/api/news/search', (req, res) => {
+    const query = req.query.q?.toLowerCase();
+    if (!query) {
+        return res.status(400).json({ error: 'Search query is required' });
+    }
+    
+    let allArticles = [];
+    const keys = cache.keys();
+    keys.forEach(key => {
+        const categoryData = cache.get(key);
+        if (Array.isArray(categoryData)) {
+            allArticles = allArticles.concat(categoryData);
+        }
+    });
+
+    const uniqueArticlesMap = new Map();
+    allArticles.forEach(article => {
+        if (!uniqueArticlesMap.has(article.url)) {
+            uniqueArticlesMap.set(article.url, article);
+        }
+    });
+    
+    const uniqueArticles = Array.from(uniqueArticlesMap.values());
+    const results = uniqueArticles.filter(article => 
+        (article.title && article.title.toLowerCase().includes(query)) || 
+        (article.summary && article.summary.toLowerCase().includes(query))
+    );
+
+    res.json(results);
+});
+
 app.get('/api/news/:category', (req, res) => {
     const category = req.params.category;
     
