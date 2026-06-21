@@ -306,6 +306,35 @@ app.get('/api/news/:category', (req, res) => {
     res.status(503).json({ error: 'News is still loading into cache, please try again in a few seconds.' });
 });
 
+const { getMatches, getStandings, getStats } = require('./fifa_api');
+
+app.get('/api/fifa/matches', async (req, res) => {
+    try {
+        const matches = await getMatches();
+        res.json(matches);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch FIFA matches' });
+    }
+});
+
+app.get('/api/fifa/standings', async (req, res) => {
+    try {
+        const standings = await getStandings();
+        res.json(standings);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch FIFA standings' });
+    }
+});
+
+app.get('/api/fifa/stats', async (req, res) => {
+    try {
+        const stats = await getStats();
+        res.json(stats);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch FIFA stats' });
+    }
+});
+
 // Start Server
 if (require.main === module) {
     app.listen(PORT, async () => {
