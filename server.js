@@ -9,6 +9,8 @@ const app = express();
 app.use(helmet());
 app.use(cors());
 
+const { initAppwrite, sendNewsNotification } = require('./appwrite_messaging');
+
 // Rate Limiting: Max 100 requests per 15 minutes per IP
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -229,11 +231,23 @@ const FEEDS = {
 };
 
 // Background refresh task
+let lastSeenTrendingArticleUrl = null;
+
 async function refreshCache() {
     console.log('--- Starting Background Cache Refresh ---');
     for (const [category, urls] of Object.entries(FEEDS)) {
         console.log(`Refreshing category: ${category}`);
         const articles = await fetchFeeds(urls);
+        
+        if (category === 'trending' && articles.length > 0) {
+            const newestArticle = articles[0];
+            if (lastSeenTrendingArticleUrl && lastSeenTrendingArticleUrl !== newestArticle.url) {
+                console.log('New trending article detected:', newestArticle.title);
+                sendNewsNotification('Breaking News: ' + newestArticle.source.name, newestArticle.title);
+            }
+            lastSeenTrendingArticleUrl = newestArticle.url;
+        }
+        
         cache.set(category, articles);
     }
     console.log('--- Cache Refresh Complete ---');
@@ -291,6 +305,7 @@ app.get('/api/news/:category', (req, res) => {
 if (require.main === module) {
     app.listen(PORT, async () => {
         console.log(`News API backend is running on http://localhost:${PORT}`);
+        initAppwrite();
         await refreshCache();
         setInterval(refreshCache, 10 * 60 * 1000);
     });
