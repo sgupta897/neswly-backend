@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const Parser = require('rss-parser');
 const NodeCache = require('node-cache');
+const axios = require('axios');
 
 const app = express();
 app.use(helmet());
@@ -33,7 +34,7 @@ const parser = new Parser({
 const PORT = process.env.PORT || 3000;
 
 // Helper to extract image from RSS item
-function extractImage(item) {
+async function extractImage(item) {
     // Generate a unique but consistent placeholder for each article using its title
     const seed = encodeURIComponent(item.title ? item.title.substring(0, 20) : Math.random().toString());
     const defaultPlaceholder = `https://picsum.photos/seed/${seed}/400/300`;
@@ -59,6 +60,22 @@ function extractImage(item) {
     // 4. Fallback to tiny thumbnails only if absolutely nothing else exists
     if (item['media:thumbnail'] && item['media:thumbnail']['$'] && item['media:thumbnail']['$'].url) {
         return item['media:thumbnail']['$'].url;
+    }
+
+    // 5. Scrape og:image from the article URL if no image was found in the RSS feed
+    if (item.link) {
+        try {
+            const res = await axios.get(item.link, { timeout: 3000 });
+            let match = res.data.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
+            if (!match) {
+                match = res.data.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+            }
+            if (match && match[1]) {
+                return match[1];
+            }
+        } catch (e) {
+            // Ignore error, fallback to placeholder
+        }
     }
 
     return defaultPlaceholder;
@@ -142,15 +159,16 @@ async function fetchFeeds(urls) {
         try {
             console.log(`Fetching: ${url}`);
             const feed = await parser.parseURL(url);
-            return feed.items.map(item => ({
+            const articlesPromises = feed.items.map(async item => ({
                 title: item.title || 'No Title',
                 description: (item.contentSnippet || item.content || '').replace(/<[^>]*>?/gm, ' ').substring(0, 200).trim() + '...',
                 summary: generateLocalSummary(item),
                 url: item.link || '',
-                urlToImage: extractImage(item),
+                urlToImage: await extractImage(item),
                 publishedAt: parseDate(item),
                 source: { name: cleanSourceName(feed.title) }
             }));
+            return Promise.all(articlesPromises);
         } catch (error) {
             console.error(`Error fetching ${url}:`, error.message);
             return [];
