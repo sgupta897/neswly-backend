@@ -186,27 +186,11 @@ async function fetchFeeds(urls) {
 
     const results = await Promise.all(fetchPromises);
     
-    // 1. Sort each individual feed's articles from newest to oldest
-    results.forEach(feedArticles => {
-        feedArticles.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
-    });
+    // 1. Combine all articles into a single flat array
+    let combined = results.flat();
 
-    // 2. Round-Robin Shuffle: Take the 1st newest from everyone, then 2nd newest, etc.
-    // This perfectly mixes publishers without bringing old articles to the top!
-    let combined = [];
-    let hasMore = true;
-    let index = 0;
-
-    while (hasMore) {
-        hasMore = false;
-        for (let i = 0; i < results.length; i++) {
-            if (index < results[i].length) {
-                combined.push(results[i][index]);
-                hasMore = true;
-            }
-        }
-        index++;
-    }
+    // 2. Sort all articles globally from newest to oldest
+    combined.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
     
     // 3. Deduplicate articles to prevent back-to-back repeats
     let uniqueCombined = [];
