@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -20,8 +21,8 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Cache for 10 minutes (600 seconds)
-const cache = new NodeCache({ stdTTL: 600 });
+// Cache data indefinitely; manually refreshed every 10 mins to prevent 503s during refresh gaps
+const cache = new NodeCache({ stdTTL: 0 });
 const parser = new Parser({
     customFields: {
         item: [
@@ -159,15 +160,23 @@ async function fetchFeeds(urls) {
         try {
             console.log(`Fetching: ${url}`);
             const feed = await parser.parseURL(url);
-            const articlesPromises = feed.items.map(async item => ({
-                title: item.title || 'No Title',
-                description: (item.contentSnippet || item.content || '').replace(/<[^>]*>?/gm, ' ').substring(0, 200).trim() + '...',
-                summary: generateLocalSummary(item),
-                url: item.link || '',
-                urlToImage: await extractImage(item),
-                publishedAt: parseDate(item),
-                source: { name: cleanSourceName(feed.title) }
-            }));
+            const articlesPromises = feed.items.map(async item => {
+                let imgUrl = await extractImage(item);
+                if (imgUrl && imgUrl.startsWith('http://')) {
+                    imgUrl = imgUrl.replace('http://', 'https://');
+                } else if (imgUrl && imgUrl.startsWith('//')) {
+                    imgUrl = 'https:' + imgUrl;
+                }
+                return {
+                    title: item.title || 'No Title',
+                    description: (item.contentSnippet || item.content || '').replace(/<[^>]*>?/gm, ' ').substring(0, 200).trim() + '...',
+                    summary: generateLocalSummary(item),
+                    url: item.link || '',
+                    urlToImage: imgUrl,
+                    publishedAt: parseDate(item),
+                    source: { name: cleanSourceName(feed.title) }
+                };
+            });
             return Promise.all(articlesPromises);
         } catch (error) {
             console.error(`Error fetching ${url}:`, error.message);
@@ -199,7 +208,21 @@ async function fetchFeeds(urls) {
         index++;
     }
     
-    return combined;
+    // 3. Deduplicate articles to prevent back-to-back repeats
+    let uniqueCombined = [];
+    let seenUrls = new Set();
+    let seenTitles = new Set();
+
+    for (const article of combined) {
+        const titleLower = article.title.toLowerCase().trim();
+        if (!seenUrls.has(article.url) && !seenTitles.has(titleLower)) {
+            seenUrls.add(article.url);
+            seenTitles.add(titleLower);
+            uniqueCombined.push(article);
+        }
+    }
+
+    return uniqueCombined;
 }
 
 // The categories and their feeds
