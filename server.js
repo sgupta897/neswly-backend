@@ -231,7 +231,10 @@ const FEEDS = {
         'http://feeds.bbci.co.uk/news/rss.xml',
         'http://feeds.bbci.co.uk/news/world/rss.xml',
         'https://timesofindia.indiatimes.com/rssfeedstopstories.cms',
-        'https://www.thehindu.com/feeder/default.rss'
+        'https://www.thehindu.com/feeder/default.rss',
+        'https://www.hindustantimes.com/feeds/rss/india-news/rssfeed.xml',
+        'https://www.aljazeera.com/xml/rss/all.xml',
+        'https://economictimes.indiatimes.com/rssfeedsdefault.cms'
     ],
     india: [
         'https://timesofindia.indiatimes.com/rssfeedstopstories.cms',
@@ -331,7 +334,7 @@ app.get('/api/news/search', (req, res) => {
     res.json(results);
 });
 
-app.get('/api/news/:category', (req, res) => {
+app.get('/api/news/:category', async (req, res) => {
     const category = req.params.category;
     
     // Input Validation
@@ -339,12 +342,25 @@ app.get('/api/news/:category', (req, res) => {
         return res.status(400).json({ error: 'Invalid news category requested.' });
     }
 
-    const data = cache.get(category);
+    let data = cache.get(category);
     if (data) {
         return res.json(data);
     }
-    // Fallback if not cached yet
-    res.status(503).json({ error: 'News is still loading into cache, please try again in a few seconds.' });
+    
+    // Fallback if not cached yet: Fetch it on-demand so the user doesn't get a 503
+    try {
+        console.log(`Cache miss for ${category}, fetching on-demand...`);
+        data = await fetchFeeds(FEEDS[category]);
+        if (data && data.length > 0) {
+            cache.set(category, data);
+            return res.json(data);
+        }
+    } catch (err) {
+        console.error(`On-demand fetch failed for ${category}:`, err);
+    }
+
+    // Only return 503 if the on-demand fetch completely failed
+    res.status(503).json({ error: 'News is currently unavailable, please try again later.' });
 });
 
 const { getMatches, getStandings, getStats } = require('./fifa_api');
