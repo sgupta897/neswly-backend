@@ -11,12 +11,14 @@ async function generateTrivia(articles) {
     const selectedArticles = articles.slice(0, 15);
     const context = selectedArticles.map((a, i) => `Article ${i+1}:\nTitle: ${a.title}\nSummary: ${a.summary}\nURL: ${a.url}`).join('\n\n');
     
-    const prompt = `You are a trivia generator. Based on the following news articles, generate exactly 50 multiple-choice questions. 
-Respond ONLY with a valid JSON array of exactly 50 objects. 
+    const prompt = `You are an expert trivia generator. Based on the following news articles, generate exactly 10 high-quality, educational multiple-choice questions. 
+Your goal is to help users gain knowledge. Focus exclusively on the most well-known headlines, major global events, and most significant breaking news from the provided articles rather than random, obscure, or minor details.
+Respond ONLY with a valid JSON array of exactly 10 objects. 
 Each object must have the following schema:
 - "question": string (the question text. IMPORTANT: Do NOT include question numbers like '1.', 'Q2:', etc.)
 - "options": array of 4 string choices
 - "correctAnswer": integer (0 to 3) representing the index of the correct option
+- "explanation": string (A brief, 1-2 sentence educational explanation of the correct answer to help the user learn)
 - "articleUrl": string (the URL of the article the question is based on)
 
 Articles:
@@ -33,8 +35,8 @@ ${context}
         const text = response.text;
         const data = JSON.parse(text);
         
-        // Ensure we only return 50
-        return data.slice(0, 50);
+        // Ensure we only return 10
+        return data.slice(0, 10);
     } catch (e) {
         console.error("Error generating trivia with AI:", e.message);
         return getMockTrivia();
@@ -42,10 +44,11 @@ ${context}
 }
 
 function getMockTrivia() {
-    return Array.from({ length: 50 }, (_, i) => ({
+    return Array.from({ length: 10 }, (_, i) => ({
         question: `What is the capital of France? (Mock data - Add GEMINI_API_KEY for real AI questions)`,
         options: ["London", "Berlin", "Paris", "Madrid"],
         correctAnswer: 2,
+        explanation: "Paris is the capital and most populous city of France.",
         articleUrl: "https://example.com"
     }));
 }
