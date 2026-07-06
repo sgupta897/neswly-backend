@@ -432,5 +432,3 @@ if (require.main === module) {
     });
 }
 module.exports = app;
-/ /   T r i g g e r   r e s t a r t  
- 
