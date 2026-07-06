@@ -364,6 +364,36 @@ app.get('/api/news/:category', async (req, res) => {
 });
 
 const { getMatches, getStandings, getStats } = require('./fifa_api');
+const { generateTrivia } = require('./trivia_api');
+
+app.get('/api/trivia/:category', async (req, res) => {
+    const category = req.params.category;
+    if (!FEEDS[category]) {
+        return res.status(400).json({ error: 'Invalid category requested.' });
+    }
+    
+    const cacheKey = `trivia_${category}`;
+    let trivia = cache.get(cacheKey);
+    if (trivia) {
+        return res.json(trivia);
+    }
+    
+    try {
+        console.log(`Generating trivia for ${category}...`);
+        const articles = cache.get(category) || await fetchFeeds(FEEDS[category]);
+        if (!articles || articles.length === 0) {
+            return res.status(500).json({ error: 'No articles available for trivia.' });
+        }
+        trivia = await generateTrivia(articles);
+        
+        // Cache for 24 hours (86400 seconds)
+        cache.set(cacheKey, trivia, 86400);
+        return res.json(trivia);
+    } catch (err) {
+        console.error(`Trivia generation failed for ${category}:`, err);
+        res.status(500).json({ error: 'Failed to generate trivia.' });
+    }
+});
 
 app.get('/api/fifa/matches', async (req, res) => {
     try {
