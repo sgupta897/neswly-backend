@@ -366,6 +366,13 @@ app.get('/api/news/:category', async (req, res) => {
 const { getMatches, getStandings, getStats } = require('./fifa_api');
 const { generateTrivia } = require('./trivia_api');
 
+app.get('/api/trivia/debug', (req, res) => {
+    res.json({
+        hasGeminiKey: !!process.env.GEMINI_API_KEY,
+        keyLength: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0
+    });
+});
+
 app.get('/api/trivia/:category', async (req, res) => {
     const category = req.params.category;
     if (!FEEDS[category]) {
