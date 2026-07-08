@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const Parser = require('rss-parser');
@@ -186,9 +187,17 @@ async function fetchFeeds(urls) {
 
     const results = await Promise.all(fetchPromises);
     
+    // 0. Filter out articles older than 3 days to avoid surfacing extremely old content during round-robin
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+
     // 1. Sort each individual feed's articles from newest to oldest
-    results.forEach(feedArticles => {
-        feedArticles.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+    // Also filter out articles that don't have a real summary provided by the publisher
+    results.forEach((feedArticles, index) => {
+        results[index] = feedArticles.filter(a => 
+            new Date(a.publishedAt) >= threeDaysAgo && 
+            !a.summary.includes("Summary not provided by the publisher")
+        );
+        results[index].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
     });
 
     // 2. Round-Robin Shuffle: Take the 1st newest from everyone, then 2nd newest, etc.
@@ -303,6 +312,11 @@ async function refreshCache() {
 }
 
 // API Routes
+// Privacy Policy Route
+app.get('/privacy', (req, res) => {
+    res.sendFile(path.join(__dirname, 'privacy.html'));
+});
+
 app.get('/api/news/search', (req, res) => {
     const query = req.query.q?.toLowerCase();
     if (!query) {

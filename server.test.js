@@ -27,5 +27,5 @@ describe('News API Endpoints', () => {
             expect(res.body).toHaveProperty('error');
             expect(res.body.error).toContain('still loading');
         }
-    });
+    }, 30000); // 30 second timeout for fetching external RSS feeds
 });
