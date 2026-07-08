@@ -312,6 +312,12 @@ async function refreshCache() {
 }
 
 // API Routes
+
+// Root Health Check Route
+app.get('/', (req, res) => {
+    res.send('Newsly API Backend is running successfully!');
+});
+
 // Privacy Policy Route
 app.get('/privacy', (req, res) => {
     res.sendFile(path.join(__dirname, 'privacy.html'));
