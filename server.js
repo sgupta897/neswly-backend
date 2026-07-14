@@ -12,6 +12,7 @@ app.use(cors());
 
 const { initAppwrite, sendNewsNotification } = require('./appwrite_messaging');
 const { generateDailyFeed } = require('./microlearning_api');
+const { generateTrivia } = require('./trivia_api');
 
 // Rate Limiting: Max 100 requests per 15 minutes per IP
 const limiter = rateLimit({
@@ -37,17 +38,14 @@ app.get('/privacy', (req, res) => {
 });
 
 // Trivia API Route (Geography Map Quiz)
-app.get('/api/trivia/trending', (req, res) => {
-    const geographyQuestions = [
-        { question: "Where is Japan?", targetLat: 36.2048, targetLng: 138.2529, targetCountry: "Japan", explanation: "Japan is an island country in East Asia." },
-        { question: "Where is Brazil?", targetLat: -14.2350, targetLng: -51.9253, targetCountry: "Brazil", explanation: "Brazil is the largest country in South America." },
-        { question: "Where is the Eiffel Tower (France)?", targetLat: 48.8584, targetLng: 2.2945, targetCountry: "France", explanation: "The Eiffel Tower is in Paris, France." },
-        { question: "Where is Australia?", targetLat: -25.2744, targetLng: 133.7751, targetCountry: "Australia", explanation: "Australia is the largest country in Oceania." },
-        { question: "Where is Egypt?", targetLat: 26.8206, targetLng: 30.8025, targetCountry: "Egypt", explanation: "Egypt is home to the Great Pyramids of Giza." },
-        { question: "Where is the United States?", targetLat: 37.0902, targetLng: -95.7129, targetCountry: "United States", explanation: "The USA spans across North America." },
-        { question: "Where is India?", targetLat: 20.5937, targetLng: 78.9629, targetCountry: "India", explanation: "India is located in South Asia." }
-    ];
-    res.json(geographyQuestions);
+app.get('/api/trivia/trending', async (req, res) => {
+    try {
+        const questions = await generateTrivia();
+        res.json(questions);
+    } catch (error) {
+        console.error('Trivia generation error:', error);
+        res.status(500).json({ error: 'Failed to generate trivia.' });
+    }
 });
 
 // Microlearning API Route
